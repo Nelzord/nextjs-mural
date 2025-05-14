@@ -65,8 +65,11 @@ export default function PayoutsPage() {
   const [payouts, setPayouts] = useState<PayoutRequest[]>([]);
   const [recipientType, setRecipientType] = useState<'individual' | 'business'>('individual');
   const [payoutType, setPayoutType] = useState<'fiat' | 'blockchain'>('fiat');
-  const [activeTab, setActiveTab] = useState<'create' | 'execute'>('create');
+  const [activeTab, setActiveTab] = useState<'create' | 'execute' | 'account'>('create');
   const [executingPayout, setExecutingPayout] = useState<string | null>(null);
+  const [selectedAccountForView, setSelectedAccountForView] = useState<string>('');
+  const [accountPayouts, setAccountPayouts] = useState<PayoutHistory[]>([]);
+  const [loadingAccountPayouts, setLoadingAccountPayouts] = useState(false);
 
   const fetchAccounts = async () => {
     try {
@@ -288,10 +291,43 @@ export default function PayoutsPage() {
     }
   };
 
+  const fetchAccountPayouts = async (accountId: string) => {
+    setLoadingAccountPayouts(true);
+    try {
+      const response = await fetch('/api/mural-pay/payouts/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch account payouts');
+      }
+
+      const data = await response.json();
+      // Filter payouts to only include those for the selected account
+      const filteredPayouts = data.filter((payout: PayoutHistory) => 
+        payout.sourceAccountId === accountId
+      );
+      setAccountPayouts(filteredPayouts);
+    } catch (err) {
+      console.error('Error fetching account payouts:', err);
+      setError('Failed to fetch account payouts');
+    } finally {
+      setLoadingAccountPayouts(false);
+    }
+  };
+
   useEffect(() => {
     fetchAccounts();
     fetchPayoutHistory();
   }, [statusFilter]);
+
+  useEffect(() => {
+    if (selectedAccountForView) {
+      fetchAccountPayouts(selectedAccountForView);
+    }
+  }, [selectedAccountForView]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
@@ -327,7 +363,7 @@ export default function PayoutsPage() {
             <nav className="flex -mb-px">
               <button
                 onClick={() => setActiveTab('create')}
-                className={`w-1/2 py-4 px-1 text-center border-b-2 font-medium text-sm ${
+                className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${
                   activeTab === 'create'
                     ? 'border-indigo-500 text-indigo-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -337,7 +373,7 @@ export default function PayoutsPage() {
               </button>
               <button
                 onClick={() => setActiveTab('execute')}
-                className={`w-1/2 py-4 px-1 text-center border-b-2 font-medium text-sm ${
+                className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${
                   activeTab === 'execute'
                     ? 'border-indigo-500 text-indigo-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -345,10 +381,20 @@ export default function PayoutsPage() {
               >
                 Execute Payout
               </button>
+              <button
+                onClick={() => setActiveTab('account')}
+                className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${
+                  activeTab === 'account'
+                    ? 'border-indigo-500 text-indigo-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Account Payouts
+              </button>
             </nav>
           </div>
 
-          <div className="p-8">
+          <div className="p-6">
             {activeTab === 'create' ? (
               <form onSubmit={createPayout} className="space-y-6">
                 <div>
@@ -644,7 +690,7 @@ export default function PayoutsPage() {
                   </button>
                 </div>
               </form>
-            ) : (
+            ) : activeTab === 'execute' ? (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-gray-900">Payouts Awaiting Execution</h2>
                 <p className="text-sm text-gray-500">Select a payout to execute</p>
@@ -732,6 +778,114 @@ export default function PayoutsPage() {
                     </svg>
                     <h3 className="mt-4 text-lg font-semibold text-gray-900">No payouts awaiting execution</h3>
                     <p className="mt-2 text-sm text-gray-500">Create a new payout request to get started.</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div>
+                  <label htmlFor="accountSelect" className="block text-sm font-semibold text-gray-700">
+                    Select Account
+                  </label>
+                  <select
+                    id="accountSelect"
+                    value={selectedAccountForView}
+                    onChange={(e) => setSelectedAccountForView(e.target.value)}
+                    className="mt-2 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900"
+                  >
+                    <option value="">Select an account</option>
+                    {accounts.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.name} ({account.id})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {loadingAccountPayouts ? (
+                  <div className="text-center py-8">
+                    <svg className="animate-spin mx-auto h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                ) : accountPayouts.length === 0 ? (
+                  <div className="text-center py-12">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <h3 className="mt-4 text-lg font-semibold text-gray-900">No payouts found</h3>
+                    <p className="mt-2 text-sm text-gray-500">Select an account to view its payout history.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {accountPayouts.map((payout) => (
+                      <div key={payout.id} className="bg-gray-50 rounded-lg p-6">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">Payout Request</h3>
+                            <p className="text-sm text-gray-500">ID: {payout.id}</p>
+                            {payout.memo && (
+                              <p className="text-sm text-gray-600 mt-1">{payout.memo}</p>
+                            )}
+                            <div className="mt-2 space-y-1">
+                              <p className="text-sm text-gray-600">
+                                Created: {formatDate(payout.createdAt)}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                Last Updated: {formatDate(payout.updatedAt)}
+                              </p>
+                            </div>
+                          </div>
+                          <div>
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(payout.status)}`}>
+                              {payout.status}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {payout.payouts && payout.payouts.length > 0 && (
+                          <div className="mt-4 space-y-4">
+                            {payout.payouts.map((p, index) => (
+                              <div key={index} className="bg-white rounded-lg p-4 border border-gray-200">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-900">Amount</p>
+                                    <p className="text-sm text-gray-600">
+                                      {p.amount.tokenAmount} {p.amount.tokenSymbol}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-900">Fiat Amount</p>
+                                    <p className="text-sm text-gray-600">
+                                      {p.details.fiatAmount.fiatAmount} {p.details.fiatAmount.fiatCurrencyCode}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-900">Transaction Fee</p>
+                                    <p className="text-sm text-gray-600">
+                                      {p.details.transactionFee.tokenAmount} {p.details.transactionFee.tokenSymbol}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-900">Exchange Rate</p>
+                                    <p className="text-sm text-gray-600">
+                                      1 {p.amount.tokenSymbol} = {p.details.exchangeRate} {p.details.fiatAmount.fiatCurrencyCode}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="mt-2">
+                                  <p className="text-sm font-medium text-gray-900">Payout Status</p>
+                                  <p className="text-sm text-gray-600">
+                                    {p.details.fiatPayoutStatus.type}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
