@@ -83,11 +83,30 @@ interface Amount {
   currency: string;
 }
 
+export interface FiatAndRailDetails {
+  type: 'usd';
+  symbol: string;
+  accountType: 'CHECKING' | 'SAVINGS';
+  bankAccountNumber: string;
+  bankRoutingNumber: string;
+}
+
+export interface PhysicalAddress {
+  address1: string;
+  address2?: string;
+  country: string;
+  state: string;
+  city: string;
+  zip: string;
+}
+
 export interface IndividualRecipientInfo {
   type: 'individual';
   firstName: string;
   lastName: string;
   email: string;
+  dateOfBirth: string;
+  physicalAddress: PhysicalAddress;
 }
 
 export interface BusinessRecipientInfo {
@@ -103,22 +122,24 @@ export interface PayoutAmount {
 }
 
 export interface FiatPayoutDetails {
-  fiat: {
-    paymentMethod: 'ACH_PUSH';
-  };
+  type: 'fiat';
+  bankName: string;
+  bankAccountOwner: string;
+  fiatAndRailDetails: FiatAndRailDetails;
 }
 
-export interface RecipientDetails {
-  name: string;
-  routingNumber: string;
-  accountNumber: string;
-  accountType: 'CHECKING' | 'SAVINGS';
+export interface SupportingDetails {
+  payoutPurpose: 'VENDOR_PAYMENT' | 'PAYROLL' | 'OTHER';
 }
 
 export interface PayoutRequest {
-  amount: PayoutAmount;
+  amount: {
+    tokenAmount: number;
+    tokenSymbol: string;
+  };
   payoutDetails: FiatPayoutDetails;
-  recipient: RecipientDetails;
+  recipientInfo: IndividualRecipientInfo | BusinessRecipientInfo;
+  supportingDetails: SupportingDetails;
 }
 
 export interface CreatePayoutRequest {

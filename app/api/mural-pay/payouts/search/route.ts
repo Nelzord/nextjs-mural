@@ -21,11 +21,10 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
+    console.log('Raw API response:', data);
     
-    // Ensure we return an array of payouts
-    const payouts = Array.isArray(data) ? data : data.payouts || [];
-    
-    return NextResponse.json(payouts);
+    // Return the results array from the response
+    return NextResponse.json(data.results || []);
   } catch (error) {
     console.error('Error fetching payout history:', error);
     return NextResponse.json(

@@ -17,8 +17,11 @@ export async function POST(request: Request) {
     });
 
     const data = await response.json();
-    return NextResponse.json(data);
+    
+    // Return the response with the original status code from the API
+    return NextResponse.json(data, { status: response.status });
   } catch (error) {
+    console.error('Error creating payout:', error);
     return NextResponse.json({ error: 'Failed to create payout' }, { status: 500 });
   }
 }
