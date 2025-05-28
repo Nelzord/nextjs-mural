@@ -1,7 +1,7 @@
 export const MURAL_PAY_CONFIG = {
   baseUrl: process.env.MURAL_PAY_API_URL || 'https://api-staging.muralpay.com',
   headers: {
-    'Authorization': `Bearer ${process.env.MURAL_PAY_API_KEY || 'e2bf21f3b437a4ff8b3d0fb4:c3d429311d28a5e4ecd60427d0be7ee1bed7caf05d3038070f989f49238d692d0dae931c:981522eb9a9102f72cb7840f438075a4.ccde481d80e2bf6006e57aafc05db26052ea77256a23d5deea7dbece70e9185a'}`,
+    'Authorization': `Bearer ${process.env.MURAL_PAY_API_KEY || ''}`,
     'on-behalf-of': process.env.MURAL_PAY_ORG_ID || '646d35c3-39fa-4192-9492-4e5f3395b57e',
     'Content-Type': 'application/json',
   },

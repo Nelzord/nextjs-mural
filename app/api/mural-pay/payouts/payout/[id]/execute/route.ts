@@ -25,7 +25,7 @@ export async function POST(
         'accept': 'application/json',
         'authorization': MURAL_PAY_CONFIG.headers.Authorization,
         'on-behalf-of': ORG_ID,
-        'transfer-api-key': process.env.MURAL_PAY_TRANSFER_KEY || 'ffd0c57fb3fffe7d03be6326:be02240bbf776093e7f0b51d361a2ca9eb22fa61196c79e6017bd7d2697f23c1e372e646:659371249cca70b35cc020b293982533.1749571d3f54bd4801eaa06de6327179de1ca789e5d1760c2be760aa4bed3c84'
+        'transfer-api-key': process.env.MURAL_PAY_TRANSFER_KEY || ''
       }
     });
 
